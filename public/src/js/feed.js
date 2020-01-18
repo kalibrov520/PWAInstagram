@@ -4,21 +4,20 @@ var closeCreatePostModalButton = document.querySelector('#close-create-post-moda
 
 function openCreatePostModal() {
   createPostArea.style.display = 'block';
-  if (deferredPrompt.style.display = 'block') {
-      deferredPrompt.prompt();
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
 
-      deferredPrompt.userChoice.then(function(choiceResult) {
-        console.log(choiceResult.outcone);
+    deferredPrompt.userChoice.then(function(choiceResult) {
+      console.log(choiceResult.outcome);
 
-        if(choiceResult.outcome === 'dismissed') {
-          console.log('User cancelled installation');
-        }
-        else {
-          console.log('User added to homescreen');
-        }
-      });
+      if (choiceResult.outcome === 'dismissed') {
+        console.log('User cancelled installation');
+      } else {
+        console.log('User added to home screen');
+      }
+    });
 
-      deferredPrompt = null;
+    deferredPrompt = null;
   }
 }
 

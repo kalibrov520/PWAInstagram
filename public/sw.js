@@ -1,4 +1,6 @@
-var CACHE_STATIC_NAME = 'static-v15';
+importScripts('/src/js/idb.js');
+
+var CACHE_STATIC_NAME = 'static-v16';
 var CACHE_DYNAMIC_NAME = 'dynamic-v2';
 var STATIC_FILES = [
   '/public/help/index.html',
@@ -6,6 +8,7 @@ var STATIC_FILES = [
   '/public/offline.html',
   '/public/src/js/app.js',
   '/public/src/js/feed.js',
+  '/public/src/js/idb.js',
   '/public/src/js/promise.js',
   '/public/src/js/fetch.js',
   '/public/public/src/js/material.min.js',
@@ -16,6 +19,12 @@ var STATIC_FILES = [
   '/public/src/fonts/material.icons.css',
   '/public/src/fonts/roboto.css'
 ];
+
+var dbPromise = idb.open('posts-store', 1, function(db) {
+  if (!db.objectStoreNames.contains('posts')) {
+    db.createObjectStore('posts', { keyPath: 'id' });
+  }
+});
 
 
 // function trimCache(cacheName, maxItems) {
@@ -72,17 +81,23 @@ self.addEventListener('fetch', function (event) {
 
   var url = 'https://pwagram-8c84d.firebaseio.com/posts';
   if (event.request.url.indexOf(url) > -1) {
-    event.respondWith(
-      caches.open(CACHE_DYNAMIC_NAME)
-        .then(function (cache) {
-          return fetch(event.request)
+    event.respondWith(fetch(event.request)
             .then(function (res) {
-              // trimCache(CACHE_DYNAMIC_NAME, 3);
-              cache.put(event.request, res.clone());
+              var clonedResponse = res.clone();
+              clonedResponse.json()
+                .then(function(data) {
+                  for (key in data){
+                    dbPromise
+                      .then(function(db) {
+                        var transaction = db.transaction('posts', 'readwrite');
+                        var store = transaction.objectStore('posts');
+                        store.put(data[key]);
+                        return transaction.complete;
+                      });
+                  }
+                });
               return res;
-            });
-        })
-    );
+            }));
   } else if (isInArray(event.request.url, STATIC_FILES)) {
     event.respondWith(
       caches.match(event.request)
